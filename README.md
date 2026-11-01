@@ -38,11 +38,9 @@ We recommend using **Conda** to create an isolated environment.
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/USERNAME/ReGIR-A.git
+git clone https://github.com/zhanjichu/ReGIR-A.git
 cd ReGIR-A
 ```
-
-> Replace `USERNAME` with the GitHub account that hosts this repository.
 
 ### 2. Create the Conda environment
 
