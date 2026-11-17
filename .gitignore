@@ -1,0 +1,37 @@
+# Local data, model weights, private toolbox configuration, and run outputs
+data/*
+!data/README.md
+configs/*.local.yaml
+configs/*.local.json
+/*.json
+.env
+.env.*
+outputs/
+checkpoints/
+logs/
+*.log
+*.jsonl
+*.tmp
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+
+# Editors and OS
+.DS_Store
+.idea/
+.vscode/
+
+# Generated model and experiment artifacts
+artifacts/models/*
+!artifacts/models/.gitkeep
+artifacts/checkpoints/*
+!artifacts/checkpoints/.gitkeep
+artifacts/experiments/restored_images/*
+!artifacts/experiments/restored_images/.gitkeep
+artifacts/experiments/training_logs/*
+!artifacts/experiments/training_logs/.gitkeep

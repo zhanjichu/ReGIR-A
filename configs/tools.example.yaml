@@ -1,0 +1,32 @@
+# Edit this file directly. Replace all placeholder paths and implement the wrappers.
+# These are two examples, not included executables or a complete toolbox.
+# Add: de_jpeg, de_stripe, inpainting, de_motion_blur, de_forced_blur, de_cloud.
+# Each wrapper loads the upstream public pretrained checkpoint (no retraining).
+# command is an argument list; adapt the example flags to your own wrapper.
+# Use the Python executable for the environment containing that tool's dependencies.
+tools:
+  de_gaussian:
+    working_dir: /path/to/your/tool/Restormer
+    command:
+      - /path/to/your/tool/environment/bin/python
+      - /path/to/your/tool/restormer_wrapper.py
+      - --weights
+      - /path/to/your/tool/public_denoising_weights.pth
+      - --input-dir
+      - '{input_dir}'
+      - --output-dir
+      - '{output_dir}'
+  de_haze:
+    working_dir: /path/to/your/tool/DehazeFormer
+    command:
+      - /path/to/your/tool/environment/bin/python
+      - /path/to/your/tool/dehazeformer_wrapper.py
+      - --weights
+      - /path/to/your/tool/public_dehazing_weights.pth
+      - --input-dir
+      - '{input_dir}'
+      - --output-dir
+      - '{output_dir}'
+# Default expected result: {output_dir}/{filename}, with original image dimensions.
+# If your wrapper writes another filename, add e.g. to its tool entry:
+#   output_file: '{output_dir}/{stem}_restored.png'

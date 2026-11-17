@@ -1,0 +1,32 @@
+cff-version: 1.2.0
+message: "If you use ReGIR-A, please cite the accepted TGRS article below."
+title: ReGIR-A
+type: software
+version: 0.1.0
+repository-code: "https://github.com/zhanjichu/ReGIR-A"
+license: MIT
+authors:
+  - family-names: Zhan
+    given-names: Jichu
+  - family-names: Zou
+    given-names: Zhentao
+  - family-names: Zhou
+    given-names: Yue
+  - family-names: Jiang
+    given-names: Xue
+preferred-citation:
+  type: article
+  title: "ReGIR-A: A Reverse-Degradation-Order Guided Agent with Iterative Reflection for Adaptive Optical Remote Sensing Image Restoration"
+  authors:
+    - family-names: Zhan
+      given-names: Jichu
+    - family-names: Zou
+      given-names: Zhentao
+    - family-names: Zhou
+      given-names: Yue
+    - family-names: Jiang
+      given-names: Xue
+  journal: IEEE Transactions on Geoscience and Remote Sensing
+  year: 2026
+  doi: "10.1109/TGRS.2026.3753988"
+  notes: Accepted for publication

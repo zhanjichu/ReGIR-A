@@ -1,0 +1,42 @@
+# Edit the example paths below directly before running.
+model:
+  name_or_path: /path/to/your/Qwen2.5-VL-7B-Instruct
+  trust_remote_code: false
+  torch_dtype: bfloat16
+  image_max_pixels: 262144
+
+data:
+  train_file: /path/to/your/data/sft_train.json
+  validation_file: null  # Optional: /path/to/your/data/sft_validation.json
+  validation_split: 0.0
+  max_samples: null
+  image_path_mappings: {}
+
+lora:
+  rank: 16
+  alpha: 32
+  dropout: 0.05
+  target_modules: all-linear
+
+training:
+  output_dir: /path/to/your/checkpoints/sft
+  logging_dir: /path/to/your/logs/sft
+  cutoff_len: 8192
+  per_device_train_batch_size: 4
+  per_device_eval_batch_size: 2
+  gradient_accumulation_steps: 1
+  learning_rate: 0.0001
+  num_train_epochs: 3
+  lr_scheduler_type: cosine
+  warmup_ratio: 0.1
+  bf16: true
+  gradient_checkpointing: true
+  logging_steps: 250
+  save_steps: 500
+  eval_steps: 250
+  save_total_limit: 3
+  dataloader_num_workers: 0
+  ddp_timeout: 1800
+  report_to: none
+  resume_from_checkpoint: null
+  seed: 42

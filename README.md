@@ -1,139 +1,95 @@
-# ReGIR-A: A Reverse-Degradation-Order Guided Agent with Iterative Reflection for Adaptive Optical Remote Sensing Image Restoration
+# ReGIR-A
 
-This repository contains the official implementation of **ReGIR-A**, a reasoning-guided iterative restoration agent for remote sensing image restoration.
+**ReGIR-A: A Reverse-Degradation-Order Guided Agent with Iterative Reflection for Adaptive Optical Remote Sensing Image Restoration**
 
-> **ReGIR-A: A Reverse-Degradation-Order Guided Agent with Iterative Reflection for Adaptive Optical Remote Sensing Image Restoration**
-> *Submitted to IEEE Transactions on Geoscience and Remote Sensing (TGRS)*
+Jichu Zhan, Zhentao Zou, Yue Zhou, and Xue Jiang
 
-The project is currently under review. **The source code, training scripts, pretrained models, and datasets will be released after the paper is officially accepted/published.**
+**Accepted by IEEE Transactions on Geoscience and Remote Sensing (TGRS), 2026.**
 
----
-
-## Overview
-
-Remote sensing images often suffer from multiple and coupled degradations, such as haze, blur, noise, low illumination, and adverse atmospheric conditions. Existing restoration methods typically rely on predefined degradation assumptions or fixed restoration pipelines, making them less flexible when facing unknown or mixed degradations.
-
-**ReGIR-A** introduces an agent-based restoration framework that enables the model to:
-
-* identify and reason about 8 kinds of mixed and coupled degradation types of RS image degradations;
-* dynamically select appropriate restoration operations;
-* perform restoration in an iterative manner;
-* reflect on intermediate restoration results;
-* determine whether further restoration is necessary.
-
-The overall framework combines **vision-language reasoning, restoration tools, iterative reflection, and adaptive restoration planning** to improve restoration performance under diverse degradation conditions.
-
-<p align="center">
-  <img src="assets/framework.png" width="90%">
-</p>
-
----
+DOI: [10.1109/TGRS.2026.3753988](https://doi.org/10.1109/TGRS.2026.3753988)
 
 ## Environment
 
-### Requirements
-
-We recommend using **Conda** to create an isolated environment.
-
-### 1. Clone the repository
+Python 3.11 or later and a Linux/CUDA environment are recommended. Run the commands below from the repository root.
 
 ```bash
 git clone https://github.com/zhanjichu/ReGIR-A.git
 cd ReGIR-A
-```
-
-### 2. Create the Conda environment
-
-```bash
-conda create -n regir-a python=3.10 -y
+conda create -n regir-a python=3.11 -y
 conda activate regir-a
+python -m pip install -r requirements.txt
+python -m pip install -e . --no-deps
 ```
 
-### 3. Install the required packages
-
-After the complete source code is released, the required dependencies can be installed using:
-
-```bash
-pip install -r requirements.txt
-```
-
-The final `requirements.txt` will be provided together with the released code.
-
----
+Install a PyTorch build compatible with your CUDA drivers.
 
 ## Preparation
 
-Before running ReGIR-A, the following components will need to be prepared.
+The backbone is [Qwen2.5-VL-7B-Instruct](https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct). Download the base model from **Hugging Face** and prepare the Stage I SFT and Stage II GRPO adapters. Enter their locations directly in the corresponding YAML configuration files. Paths beginning with `/path/to/your/` are examples to replace with your own paths. See [data/README.md](data/README.md) for more details about dataset.
 
-### 1. Pretrained VLM
+### Restoration tools
 
-ReGIR-A uses a vision-language model *Qwen2.5-VL-7B* as the reasoning and decision-making component.
+Install the following tools independently and adapt their inference scripts into callable tools for the agent. The action names must match `agent/prompts.py`. 
 
-The released version will provide detailed instructions for:
+| Task | Tool / upstream repository | Agent action |
+| --- | --- | --- |
+| Gaussian denoising, motion and defocus deblurring | [Restormer](https://github.com/swz30/Restormer) | `de_gaussian`, `de_motion_blur`, `de_forced_blur` |
+| JPEG artifact removal | [FBCNN](https://github.com/jiaxi-jiang/FBCNN) | `de_jpeg` |
+| Destriping | [ASCNet](https://github.com/xdFai/ASCNet) | `de_stripe` |
+| Inpainting | [LaMa](https://github.com/advimman/lama) | `inpainting` |
+| Dehazing | [DehazeFormer](https://github.com/IDKiro/DehazeFormer) | `de_haze` |
+| Cloud removal | [ACA-CRNet](https://github.com/huangwenwenlili/ACA-CRNet)  | `de_cloud` |
 
-* configuring the model path;
-* loading the fine-tuned LoRA weights.
+Use each tool's publicly released pretrained weights, choosing the checkpoint for the relevant task. Keep these restoration models frozen: ReGIR-A does not retrain or fine-tune them. The two training stages below train the VLM agent adapters. Follow the upstream repositories for weight downloads and tool-specific dependencies. If needing to install more tools, please modify `agent/prompts.py` accordingly.
 
-The exact model configuration will be provided upon release.
+Adapt each tool's inference script to load its public pretrained weights and accept input/output directories, preserving image dimensions and filenames. Enter the wrapper commands and paths in [configs/tools.example.yaml](configs/tools.example.yaml), replacing the examples and configuring all eight actions. `{input_dir}` and `{output_dir}` are filled automatically.
 
----
+## Evaluation
 
-### 2. Restoration Toolbox
+Edit [configs/inference.yaml](configs/inference.yaml) directly. Fill in the base model, both adapter checkpoints, the tool YAML, and your input/output image directories. For paired PSNR/SSIM evaluation, set `inference.reference_dir` to a directory containing reference images with matching filenames. Set it to `null` for restoration without paired evaluation. Then run:
 
-ReGIR-A interacts with a set of specialized restoration models/tools.
+```bash
+python -m scripts.infer --config configs/inference.yaml
+```
 
-The toolbox will include restoration models for different degradation types, such as:
+Use a fresh output directory. Restored images and `run_records.json` are written there. Directory arguments such as `--input-dir`, `--output-dir`, and `--reference-dir` can override the YAML values.
 
-* Denoising;
-* Deblurring;
-* Dehazing;
-* Cloud Removal;
-* JPEG Removal;
-* Inpainting;
-* Destriping
-* other remote sensing image restoration operations.
+The agent returns the latest restored image. Reference images are used only for PSNR/SSIM evaluation after restoration. `max_cycles: 6` permits one initial tool call and up to five further calls. 
 
-The corresponding pretrained weights and setup instructions will be released together with the code.
+## Two-stage training
 
----
+Fill in the model, training-data, and output paths directly in the YAML files below. The example paths are placeholders. See [data/README.md](data/README.md) for the expected annotation fields. Do not commit your private datasets, credentials, or machine-specific configurations.
 
-### 3. MD-RS Dataset
+**Stage I: supervised fine-tuning**
 
-The proposed **MD-RS** benchmark will be released for evaluating multi-degradation remote sensing image restoration.
+Edit [configs/sft.yaml](configs/sft.yaml) directly: set `model.name_or_path`, `data.train_file`, and `training.output_dir`; optionally set `data.validation_file` and `training.logging_dir`. Each training record needs `messages` and `images`. Effective global batch size also depends on GPU count and gradient accumulation.
 
-The dataset contains images with diverse degradation conditions and supports evaluation of restoration performance under both individual and coupled degradations.
+```bash
+python -m scripts.train_sft --config configs/sft.yaml
+```
 
-Detailed instructions for:
+**Stage II: GRPO**
 
-* dataset downloading;
-* directory organization;
-* degradation annotations;
-* evaluation protocols
+Edit [configs/grpo.yaml](configs/grpo.yaml): set the base model, `model.sft_adapter` to the Stage I checkpoint, `data.train_file`, `environment.tool_config`, and `training.output_dir`. Each record needs `input_image` and `reference_image`; the restoration toolbox must be configured before training. For an already merged SFT model, set `model.name_or_path` to that model, `model.sft_adapter: null`, and `model.sft_merged: true`. 
 
-will be provided after the dataset is released.
+```bash
+python -m scripts.train_grpo --config configs/grpo.yaml
+```
 
----
+Full training and evaluation require the intended checkpoints, annotations, tool wrappers, and GPU environment.
 
-## Usage
+## Citation
 
-Detailed training and inference instructions will be provided after the official code release.
-
----
+```bibtex
+@article{zhan2026regira,
+  title   = {{ReGIR-A}: A Reverse-Degradation-Order Guided Agent with Iterative Reflection for Adaptive Optical Remote Sensing Image Restoration},
+  author  = {Zhan, Jichu and Zou, Zhentao and Zhou, Yue and Jiang, Xue},
+  journal = {IEEE Transactions on Geoscience and Remote Sensing},
+  year    = {2026},
+  doi     = {10.1109/TGRS.2026.3753988}
+}
+```
 
 ## License
 
-The source code and dataset will be released under an appropriate open-source license after publication.
-
-Please check the repository for the final license and usage terms.
-
----
-
-## Acknowledgements
-
-We thank the authors of the existing remote sensing image restoration and vision-language model projects whose open-source implementations contributed to this work.
-
-The corresponding third-party models and datasets remain subject to their original licenses and terms of use.
-
----
-
-**Code, pretrained models, training scripts, and the MD-RS dataset are coming soon.**
+Code is released under the [MIT License](LICENSE). Third-party models, weights, and imagery retain their respective licenses.
